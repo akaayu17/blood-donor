@@ -19,6 +19,7 @@ public class DonationService {
     private final DonorRepository donorRepository;
     private final BloodBankRepository bloodBankRepository;
     private final BloodStockRepository bloodStockRepository;
+    private final UserRepository userRepository;
 
     public List<Map<String, Object>> getAllDonations() {
         return donationRepository.findAll().stream().map(this::mapToResponse).collect(Collectors.toList());
@@ -29,10 +30,37 @@ public class DonationService {
                 .map(this::mapToResponse).collect(Collectors.toList());
     }
 
+    public List<Map<String, Object>> getMyDonations(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+        Donor donor = donorRepository.findByUserUserId(user.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Donor profile", "userId", user.getUserId()));
+        return getDonationsByDonor(donor.getDonorId());
+    }
+
     @Transactional
-    public Map<String, Object> createDonation(DonationRequest req) {
-        Donor donor = donorRepository.findById(req.getDonorId())
-                .orElseThrow(() -> new ResourceNotFoundException("Donor", "id", req.getDonorId()));
+    public Map<String, Object> createDonation(DonationRequest req, String email) {
+        User actor = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+
+        Donor donor;
+        if (actor.getRole() == User.Role.Admin) {
+            if (req.getDonorId() == null) {
+                throw new IllegalArgumentException("donorId is required for admin donation entry");
+            }
+            donor = donorRepository.findById(req.getDonorId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Donor", "id", req.getDonorId()));
+        } else {
+            donor = donorRepository.findByUserUserId(actor.getUserId())
+                    .orElseThrow(() -> new IllegalArgumentException("Create donor profile first before donating blood"));
+            if (donor.getApprovalStatus() != Donor.ApprovalStatus.Approved) {
+                throw new IllegalArgumentException("Your donor registration is pending admin approval");
+            }
+            if (donor.getEligibilityStatus() != Donor.EligibilityStatus.Eligible) {
+                throw new IllegalArgumentException("You are not currently eligible to donate blood");
+            }
+        }
+
         BloodBank bank = bloodBankRepository.findById(req.getBankId())
                 .orElseThrow(() -> new ResourceNotFoundException("BloodBank", "id", req.getBankId()));
 
@@ -61,9 +89,9 @@ public class DonationService {
         Donation.ScreeningStatus oldStatus = donation.getScreeningStatus();
         donation.setScreeningStatus(newStatus);
 
-        // If screening passed → add to stock
+        // If screening passed -> add to stock
         if (newStatus == Donation.ScreeningStatus.Passed && oldStatus != Donation.ScreeningStatus.Passed) {
-            String bgValue = donation.getDonor().getBloodGroup().getValue();
+            String bgValue = donation.getDonor().getBloodGroup();
             Integer bankId = donation.getBloodBank().getBankId();
             BloodStock stock = bloodStockRepository.findByBloodBankBankIdAndBloodGroup(bankId, bgValue)
                     .orElse(BloodStock.builder().bloodBank(donation.getBloodBank()).bloodGroup(bgValue)
@@ -80,7 +108,7 @@ public class DonationService {
         map.put("donationId", d.getDonationId());
         map.put("donorId", d.getDonor().getDonorId());
         map.put("donorName", d.getDonor().getUser().getFullName());
-        map.put("bloodGroup", d.getDonor().getBloodGroup().getValue());
+        map.put("bloodGroup", d.getDonor().getBloodGroup());
         map.put("bankId", d.getBloodBank().getBankId());
         map.put("bankName", d.getBloodBank().getBankName());
         map.put("donationDate", d.getDonationDate());

@@ -68,6 +68,16 @@ public class AuthService {
         User user = userRepository.findByEmail(req.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", req.getEmail()));
 
+        if (req.getAccountType() != null && !req.getAccountType().isBlank()) {
+            String expected = req.getAccountType().trim();
+            if ("Admin".equalsIgnoreCase(expected) && user.getRole() != User.Role.Admin) {
+                throw new IllegalArgumentException("This account is not registered as Admin");
+            }
+            if ("User".equalsIgnoreCase(expected) && user.getRole() == User.Role.Admin) {
+                throw new IllegalArgumentException("Admin account cannot login from User panel");
+            }
+        }
+
         return AuthResponse.builder()
                 .token(token)
                 .tokenType("Bearer")

@@ -18,9 +18,8 @@ public class Donor {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "blood_group", nullable = false)
-    private BloodGroup bloodGroup;
+    private String bloodGroup;
 
     @Column(name = "last_donation_date")
     private LocalDate lastDonationDate;
@@ -29,19 +28,30 @@ public class Donor {
     @Column(name = "eligibility_status")
     private EligibilityStatus eligibilityStatus = EligibilityStatus.Eligible;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status")
+    private ApprovalStatus approvalStatus = ApprovalStatus.Approved;
+
     public enum BloodGroup { A_PLUS("A+"), A_MINUS("A-"), B_PLUS("B+"), B_MINUS("B-"),
                              AB_PLUS("AB+"), AB_MINUS("AB-"), O_PLUS("O+"), O_MINUS("O-");
         private final String value;
         BloodGroup(String value) { this.value = value; }
         public String getValue() { return value; }
 
-        public static BloodGroup fromValue(String v) {
-            for (BloodGroup bg : values()) {
-                if (bg.value.equals(v)) return bg;
+        public static String normalize(String value) {
+            if (value == null || value.isBlank()) {
+                throw new IllegalArgumentException("Blood group is required");
             }
-            throw new IllegalArgumentException("Unknown blood group: " + v);
+            String input = value.trim();
+            for (BloodGroup bg : values()) {
+                if (bg.value.equalsIgnoreCase(input) || bg.name().equalsIgnoreCase(input)) {
+                    return bg.value;
+                }
+            }
+            throw new IllegalArgumentException("Unknown blood group: " + value);
         }
     }
 
     public enum EligibilityStatus { Eligible, Ineligible, Pending }
+    public enum ApprovalStatus { Pending, Approved, Rejected }
 }

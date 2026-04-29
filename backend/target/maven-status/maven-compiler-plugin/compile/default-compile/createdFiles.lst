@@ -55,6 +55,7 @@ com\blooddonor\model\UserPhone$UserPhoneBuilder.class
 com\blooddonor\repository\BloodRequestRepository.class
 com\blooddonor\service\FulfillmentService.class
 com\blooddonor\model\Donation$DonationBuilder.class
+com\blooddonor\model\Donor$ApprovalStatus.class
 com\blooddonor\model\UserPhone.class
 com\blooddonor\model\BloodBankPhone$BloodBankPhoneBuilder.class
 com\blooddonor\model\BloodBank$BloodBankBuilder.class

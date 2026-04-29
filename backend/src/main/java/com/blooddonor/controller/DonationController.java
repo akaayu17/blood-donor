@@ -5,6 +5,7 @@ import com.blooddonor.service.DonationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
@@ -26,9 +27,15 @@ public class DonationController {
         return ResponseEntity.ok(donationService.getDonationsByDonor(id));
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<List<Map<String, Object>>> getMyDonations(Authentication auth) {
+        return ResponseEntity.ok(donationService.getMyDonations(auth.getName()));
+    }
+
     @PostMapping
-    public ResponseEntity<Map<String, Object>> createDonation(@Valid @RequestBody DonationRequest req) {
-        return ResponseEntity.ok(donationService.createDonation(req));
+    public ResponseEntity<Map<String, Object>> createDonation(@Valid @RequestBody DonationRequest req,
+                                                              Authentication auth) {
+        return ResponseEntity.ok(donationService.createDonation(req, auth.getName()));
     }
 
     @PatchMapping("/{id}/screening")

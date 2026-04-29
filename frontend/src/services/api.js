@@ -24,7 +24,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      window.location.href = '/login'
+      window.location.href = '/login/user'
     }
     return Promise.reject(error)
   }
@@ -49,10 +49,14 @@ export const userAPI = {
 // ─── Donor API ──────────────────────────────────────────────────────────────
 export const donorAPI = {
   getAll: ()                       => api.get('/donors'),
+  getMe: ()                        => api.get('/donors/me'),
+  getPending: ()                   => api.get('/donors/pending'),
   getById: (id)                    => api.get(`/donors/${id}`),
+  apply: (bloodGroup)              => api.post('/donors/apply', { bloodGroup }),
   create: (data)                   => api.post('/donors', data),
   update: (id, data)               => api.put(`/donors/${id}`, data),
   updateEligibility: (id, status)  => api.patch(`/donors/${id}/eligibility`, { eligibilityStatus: status }),
+  updateApproval: (id, status)     => api.patch(`/donors/${id}/approval`, { approvalStatus: status }),
 }
 
 // ─── Blood Bank API ─────────────────────────────────────────────────────────
@@ -85,6 +89,7 @@ export const bloodRequestAPI = {
 // ─── Donation API ────────────────────────────────────────────────────────────
 export const donationAPI = {
   getAll: ()                          => api.get('/donations'),
+  getMy: ()                           => api.get('/donations/my'),
   getByDonor: (donorId)               => api.get(`/donations/donor/${donorId}`),
   create: (data)                      => api.post('/donations', data),
   updateScreening: (id, status)       => api.patch(`/donations/${id}/screening`, { screeningStatus: status }),

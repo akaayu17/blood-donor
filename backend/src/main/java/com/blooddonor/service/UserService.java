@@ -28,6 +28,11 @@ public class UserService {
         return AuthService.mapToResponse(user);
     }
 
+    public User getCurrentUserEntity(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+    }
+
     @Transactional
     public UserResponse updateUser(Integer id, User.Role role, String fullName, String address) {
         User user = userRepository.findById(id)

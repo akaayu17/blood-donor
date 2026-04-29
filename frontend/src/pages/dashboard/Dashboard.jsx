@@ -6,10 +6,12 @@ import StatCard from '../../components/StatCard'
 import StatusBadge from '../../components/StatusBadge'
 import BloodGroupBadge from '../../components/BloodGroupBadge'
 import EmptyState from '../../components/EmptyState'
-import { adminAPI, bloodRequestAPI, bloodStockAPI } from '../../services/api'
+import { adminAPI, bloodRequestAPI, bloodStockAPI, donationAPI } from '../../services/api'
 import toast from 'react-hot-toast'
+import { useAuth } from '../../context/AuthContext'
 
 export default function Dashboard() {
+  const { isAdmin } = useAuth()
   const [stats, setStats] = useState(null)
   const [requests, setRequests] = useState([])
   const [stocks, setStocks] = useState([])
@@ -18,12 +20,26 @@ export default function Dashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [statsRes, requestsRes, stockRes] = await Promise.all([
-          adminAPI.getStats(),
-          bloodRequestAPI.getAll(),
+        const isAdminUser = isAdmin()
+        const [requestsRes, stockRes] = await Promise.all([
+          isAdminUser ? bloodRequestAPI.getAll() : bloodRequestAPI.getMyRequests(),
           bloodStockAPI.getAll(),
         ])
-        setStats(statsRes.data)
+        if (isAdminUser) {
+          const statsRes = await adminAPI.getStats()
+          setStats(statsRes.data)
+        } else {
+          const myDonations = await donationAPI.getMy().catch(() => ({ data: [] }))
+          const pendingCount = requestsRes.data.filter(r => r.status === 'Pending').length
+          setStats({
+            totalDonors: 0,
+            totalRequests: requestsRes.data.length,
+            totalBloodBanks: 0,
+            lowStockAlerts: 0,
+            totalDonations: myDonations.data.length,
+            pendingRequests: pendingCount,
+          })
+        }
         setRequests(requestsRes.data.slice(0, 6))
         setStocks(stockRes.data)
       } catch {
@@ -61,11 +77,11 @@ export default function Dashboard() {
           ) : (
             <>
               <div className="stats-grid">
-                <StatCard icon={Heart}          value={stats?.totalDonors || 0}      label="Total Donors"      color="#e8192c" />
+                <StatCard icon={Heart}          value={isAdmin() ? (stats?.totalDonors || 0) : (stats?.totalDonations || 0)}  label={isAdmin() ? 'Total Donors' : 'Your Donations'} color="#e8192c" />
                 <StatCard icon={ClipboardList}  value={stats?.totalRequests || 0}    label="Blood Requests"    color="#3b82f6" />
-                <StatCard icon={Building2}      value={stats?.totalBloodBanks || 0}  label="Blood Banks"       color="#8b5cf6" />
-                <StatCard icon={AlertTriangle}  value={stats?.lowStockAlerts || 0}   label="Low Stock Alerts"  color="#f59e0b" />
-                <StatCard icon={Droplets}       value={stats?.totalDonations || 0}   label="Total Donations"   color="#22c55e" />
+                <StatCard icon={Building2}      value={stats?.totalBloodBanks || 0}  label={isAdmin() ? 'Blood Banks' : 'Available Banks'} color="#8b5cf6" />
+                <StatCard icon={AlertTriangle}  value={stats?.lowStockAlerts || 0}   label={isAdmin() ? 'Low Stock Alerts' : 'Stock Alerts'} color="#f59e0b" />
+                <StatCard icon={Droplets}       value={stats?.totalDonations || 0}   label={isAdmin() ? 'Total Donations' : 'Your Donations'} color="#22c55e" />
                 <StatCard icon={Users}          value={stats?.pendingRequests || 0}  label="Pending Requests"  color="#f97316" />
               </div>
 

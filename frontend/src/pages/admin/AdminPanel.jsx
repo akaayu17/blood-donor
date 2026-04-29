@@ -6,7 +6,7 @@ import Topbar from '../../components/Topbar'
 import StatCard from '../../components/StatCard'
 import StatusBadge from '../../components/StatusBadge'
 import EmptyState from '../../components/EmptyState'
-import { adminAPI, userAPI, bloodStockAPI } from '../../services/api'
+import { adminAPI, userAPI, bloodStockAPI, donorAPI } from '../../services/api'
 
 const ROLES = ['User', 'Donor', 'Admin']
 
@@ -14,6 +14,7 @@ export default function AdminPanel() {
   const [stats, setStats]       = useState(null)
   const [users, setUsers]       = useState([])
   const [lowStock, setLowStock] = useState([])
+  const [pendingDonors, setPendingDonors] = useState([])
   const [loading, setLoading]   = useState(true)
   const [saving, setSaving]     = useState({})
 
@@ -23,9 +24,11 @@ export default function AdminPanel() {
       const [sRes, uRes, lsRes] = await Promise.all([
         adminAPI.getStats(), userAPI.getAll(), bloodStockAPI.getLowStock(100)
       ])
+      const pendingRes = await donorAPI.getPending().catch(() => ({ data: [] }))
       setStats(sRes.data)
       setUsers(uRes.data)
       setLowStock(lsRes.data)
+      setPendingDonors(pendingRes.data)
     } catch { toast.error('Failed to load admin data') }
     finally { setLoading(false) }
   }
@@ -49,6 +52,16 @@ export default function AdminPanel() {
       toast.success('User deleted!')
       load()
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to delete') }
+  }
+
+  const handleDonorApproval = async (donorId, approvalStatus) => {
+    try {
+      await donorAPI.updateApproval(donorId, approvalStatus)
+      toast.success(`Donor request ${approvalStatus.toLowerCase()}`)
+      load()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update donor request')
+    }
   }
 
   return (
@@ -100,6 +113,50 @@ export default function AdminPanel() {
                   </div>
                 </div>
               )}
+
+              {/* User Management */}
+              <div className="card" style={{ marginBottom: 24, padding: 0 }}>
+                <div className="card-header" style={{ padding: '20px 20px 16px' }}>
+                  <h2 className="card-title">Pending Donor Approvals</h2>
+                  <span className="badge badge-muted">{pendingDonors.length} pending</span>
+                </div>
+                {pendingDonors.length === 0 ? <EmptyState title="No pending donor requests" /> : (
+                  <div className="table-wrapper">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>User</th>
+                          <th>Blood Group</th>
+                          <th>Eligibility</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pendingDonors.map(d => (
+                          <tr key={d.donorId}>
+                            <td>
+                              <div style={{ fontWeight: 600 }}>{d.fullName}</div>
+                              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{d.email}</div>
+                            </td>
+                            <td>{d.bloodGroup}</td>
+                            <td><StatusBadge status={d.eligibilityStatus} /></td>
+                            <td>
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                <button className="btn btn-success btn-sm" onClick={() => handleDonorApproval(d.donorId, 'Approved')}>
+                                  Approve
+                                </button>
+                                <button className="btn btn-danger btn-sm" onClick={() => handleDonorApproval(d.donorId, 'Rejected')}>
+                                  Reject
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
 
               {/* User Management */}
               <div className="card" style={{ padding: 0 }}>

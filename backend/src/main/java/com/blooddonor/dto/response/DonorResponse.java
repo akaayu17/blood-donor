@@ -12,4 +12,5 @@ public class DonorResponse {
     private String bloodGroup;
     private LocalDate lastDonationDate;
     private String eligibilityStatus;
+    private String approvalStatus;
 }

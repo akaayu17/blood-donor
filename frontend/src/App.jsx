@@ -14,12 +14,14 @@ export default function App() {
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/login"    element={<Login />} />
+      <Route path="/login"    element={<Navigate to="/login/user" replace />} />
+      <Route path="/login/user" element={<Login panel="User" />} />
+      <Route path="/login/admin" element={<Login panel="Admin" />} />
       <Route path="/register" element={<Register />} />
 
       {/* Protected routes */}
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/donors"    element={<ProtectedRoute><Donors /></ProtectedRoute>} />
+      <Route path="/donors"    element={<ProtectedRoute allowedRoles={['Admin']}><Donors /></ProtectedRoute>} />
       <Route path="/blood-banks" element={<ProtectedRoute><BloodBanks /></ProtectedRoute>} />
       <Route path="/blood-stock" element={<ProtectedRoute><BloodStock /></ProtectedRoute>} />
       <Route path="/blood-requests" element={<ProtectedRoute><BloodRequests /></ProtectedRoute>} />

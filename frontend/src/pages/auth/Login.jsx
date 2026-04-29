@@ -5,7 +5,7 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { authAPI } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 
-export default function Login() {
+export default function Login({ panel = 'User' }) {
   const [form, setForm] = useState({ email: '', password: '' })
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -19,7 +19,7 @@ export default function Login() {
     if (!form.email || !form.password) { toast.error('Please fill all fields'); return }
     setLoading(true)
     try {
-      const res = await authAPI.login(form)
+      const res = await authAPI.login({ ...form, accountType: panel })
       login(res.data)
       toast.success(`Welcome back, ${res.data.user.fullName}!`)
       navigate('/dashboard')
@@ -39,7 +39,16 @@ export default function Login() {
         </div>
 
         <h1 className="auth-title">Welcome Back</h1>
-        <p className="auth-subtitle">Sign in to your account to continue</p>
+        <p className="auth-subtitle">Sign in to your {panel} account to continue</p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
+          <Link to="/login/user" className={`btn ${panel === 'User' ? 'btn-primary' : 'btn-secondary'}`} style={{ width: '100%' }}>
+            User Login
+          </Link>
+          <Link to="/login/admin" className={`btn ${panel === 'Admin' ? 'btn-primary' : 'btn-secondary'}`} style={{ width: '100%' }}>
+            Admin Login
+          </Link>
+        </div>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -106,7 +115,7 @@ export default function Login() {
         <div style={{ marginTop: 20, padding: '12px 16px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', fontSize: 12, color: 'var(--text-muted)' }}>
           <strong style={{ color: 'var(--text-secondary)' }}>Demo accounts:</strong><br />
           admin@blooddonor.com / password123 (Admin)<br />
-          alice@example.com / password123 (Donor)
+          alice@example.com / password123 (User/Donor)
         </div>
       </div>
     </div>

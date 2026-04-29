@@ -7,7 +7,6 @@ import { useAuth } from '../context/AuthContext'
 
 const navItems = [
   { to: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/donors',       icon: Heart,            label: 'Donors' },
   { to: '/blood-banks',  icon: Building2,        label: 'Blood Banks' },
   { to: '/blood-stock',  icon: Droplets,         label: 'Blood Stock' },
   { to: '/blood-requests', icon: ClipboardList,  label: 'Requests' },
@@ -20,7 +19,7 @@ export default function Sidebar() {
 
   const handleLogout = () => {
     logout()
-    navigate('/login')
+    navigate('/login/user')
   }
 
   const initials = user?.fullName
@@ -39,7 +38,10 @@ export default function Sidebar() {
 
       <nav className="sidebar-nav">
         <div className="nav-section-label">Navigation</div>
-        {navItems.map(({ to, icon: Icon, label }) => (
+        {(isAdmin()
+          ? [{ to: '/donors', icon: Users, label: 'Donors' }, ...navItems]
+          : navItems
+        ).map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}

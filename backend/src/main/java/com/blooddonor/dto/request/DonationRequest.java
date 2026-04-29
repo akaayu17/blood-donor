@@ -7,7 +7,6 @@ import java.time.LocalDate;
 
 @Data
 public class DonationRequest {
-    @NotNull
     private Integer donorId;
 
     @NotNull
